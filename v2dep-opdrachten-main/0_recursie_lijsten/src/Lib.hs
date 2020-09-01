@@ -24,15 +24,13 @@ ex4 list (x:xs) = ex4 (list ++ [x]) xs
 
 -- Schrijf een functie die twee lijsten paarsgewijs bij elkaar optelt, dus bijvoorbeeld [1,2,3] en [4,5,6] combineert tot [1+4, 2+5, 3+6] oftewel [5,7,9]. Het is voor deze opgave nog niet de bedoeling dat je hogere-orde functies gebruikt.
 ex5 :: [Int] -> [Int] -> [Int]
-add n m = n + m
 ex5 list [] = list
-ex5 (x:xs) (x2:xs2) = add x x2 : ex5 xs xs2
+ex5 (x:xs) (x2:xs2) = x + x2 : ex5 xs xs2
 
 -- Schrijf een functie die twee lijsten paarsgewijs met elkaar vermenigvuldigt, dus bijvoorbeeld [1,2,3] en [4,5,6] combineert tot [1*4, 2*5, 3*6] oftewel [4,10,18]. Het is voor deze opgave nog niet de bedoeling dat je hogere-orde functies gebruikt.
 ex6 :: [Int] -> [Int] -> [Int]
-mult n m = n * m
 ex6 list [] = list
-ex6 (x:xs) (x2:xs2) = mult x x2 : ex6 xs xs2
+ex6 (x:xs) (x2:xs2) = x * x2 : ex6 xs xs2
 
 -- Schrijf een functie die de functies uit opgave 1 en 6 combineert tot een functie die het inwendig prodct uitrekent. Bijvoorbeeld: `ex7 [1,2,3] [4,5,6]` -> 1*4 + 2*5 + 3*6 = 32.
 ex7 :: [Int] -> [Int] -> Int
