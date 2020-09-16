@@ -4,17 +4,23 @@ module Lib
 
 -- Schrijf een functie die de som van een lijst getallen berekent, net als de `product` functie uit de les.
 ex1 :: [Int] -> Int
+-- ^ Pattern match op een lege lijst
 ex1 [] = 0
+-- ^ Voeg recursief het eerste element toe uit de tail van de 'vorige' lijst.
 ex1 list = head list + ex1 (tail list)
 
 -- Schrijf een functie die alle elementen van een lijst met 1 ophoogt; bijvoorbeeld [1,2,3] -> [2,3,4]. Het is voor deze opgave nog niet de bedoeling dat je hogere-orde functies gebruikt.
 ex2 :: [Int] -> [Int]
+-- ^ Pattern match op een lege lijst
 ex2 [] = []
+-- ^ Voeg recursief 1 toe aan de head van 'elke' lijst.
 ex2 (x:xs) = (x + 1 : ex2 (xs))
 
 -- Schrijf een functie die alle elementen van een lijst met -1 vermenigvuldigt; bijvoorbeeld [1,-2,3] -> [-1,2,-3]. Het is voor deze opgave nog niet de bedoeling dat je hogere-orde functies gebruikt.
 ex3 :: [Int] -> [Int]
+-- ^ Pattern match op een lege lijst
 ex3 [] = []
+-- ^ Haal recursief 1 af van de head uit 'elke' lijst.
 ex3 (x:xs) = (x * (-1)) : ex3 (xs)
 
 -- Schrijf een functie die twee lijsten aan elkaar plakt, dus bijvoorbeeld [1,2,3] en [4,5,6] combineert tot [1,2,3,4,5,6]. Maak hierbij geen gebruik van de standaard-functies, maar los het probleem zelf met (expliciete) recursie op. Hint: je hoeft maar door een van beide lijsten heen te lopen met recursie.
