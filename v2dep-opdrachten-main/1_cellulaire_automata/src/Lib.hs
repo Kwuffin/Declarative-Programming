@@ -44,27 +44,32 @@ stringVoorbeeld = FocusList ["3","4","5"] ["2","1","0"]
 
 toList :: FocusList a -> [a]
 addTo list [] = list
-addTo addList (x:xs) = addTo (x : addList) xs   -- Voeg twee lijsten bij elkaar toe.
+-- ^Voeg twee lijsten bij elkaar toe.
+addTo addList (x:xs) = addTo (x : addList) xs   
 
 toList (FocusList forward backward) =  addTo forward backward 
 
 -- TODO Schrijf en documenteer een functie die een gewone lijst omzet in een focus-list. Omdat een gewone lijst geen focus heeft moeten we deze kiezen; dit is altijd het eerste element.
 fromList :: [a] -> FocusList a
-fromList (x:xs) = FocusList [x] xs    -- Zet de head in een aparte lijst. In de nieuwe FocusList is de 'head' nu de focus.
+-- ^Append de head in een aparte lijst. In de nieuwe FocusList is de 'head' nu de focus.
+fromList (x:xs) = FocusList [x] xs
 
 -- | Move the focus one to the left
 goLeft :: FocusList a -> FocusList a
+-- ^Append head van backward naar forward.
 goLeft (FocusList fw (f:bw)) = FocusList (f:fw) bw
 
 -- TODO Schrijf en documenteer zelf een functie goRight die de focuslist een plaats naar rechts opschuift.
 
 goRight :: FocusList a -> FocusList a
-goRight (FocusList (b:fw) bw)= FocusList fw (b:bw)    -- zet head van 'forward' in 'backward' van de FocusList.
+-- ^Append head van 'forward' in 'backward' van de FocusList.
+goRight (FocusList (b:fw) bw)= FocusList fw (b:bw)
 
 -- TODO Schrijf en documenteer een functie leftMost die de focus geheel naar links opschuift.
 leftMost :: FocusList a -> FocusList a
 addToRec list [] = list
-addToRec l1 (x:xs) = addToRec (x:l1) xs   -- Voeg recursief elk element uit 'backward' toe in 'forward' totdat 'backward' leeg is.
+-- ^Voeg recursief elk element uit 'backward' toe in 'forward' totdat 'backward' leeg is.
+addToRec l1 (x:xs) = addToRec (x:l1) xs   
 
 leftMost (FocusList forward backward) = FocusList (addToRec forward backward) []
 
@@ -83,10 +88,18 @@ rightMost (FocusList forward backward) = FocusList [] (addToRec backward forward
 -- [⟨░⟩, ▓, ▓, ▓, ▓, ░]  ⤚goLeft→ [⟨░⟩, ░, ▓, ▓, ▓, ▓, ░]
 
 totalLeft :: (Eq a, Monoid a) => FocusList a -> FocusList a
-totalLeft = undefined
+-- ^Als backward leeg is, geef mempty, geef mempty mee aan forward.
+totalLeft (FocusList a []) = FocusList (mempty : a) []    
+
+-- ^Normale goLeft functie.
+totalLeft (FocusList fw (f:bw)) = FocusList (f:fw) bw     
 
 totalRight :: (Eq a, Monoid a) => FocusList a -> FocusList a
-totalRight = undefined
+-- ^Als forward leeg is, geef mempty mee aan backward.
+totalRight (FocusList [] a) = FocusList [] (mempty : a)   
+
+-- ^Normale goRight functie.
+totalRight (FocusList (b:fw) bw) = FocusList fw (b:bw)    
 
 -- TODO In de colleges hebben we kennis gemaakt met een aantal hogere-orde functies zoals `map`, `zipWith` en `fold[r/l]`. Hier zullen we equivalenten voor de FocusList opstellen.
 -- De functies mapFocusList werkt zoals je zou verwachten: de functie wordt op ieder element toegepast, voor, op en na de focus. Je mag hier gewoon map voor gebruiken
@@ -120,7 +133,8 @@ zipFocusListWith f (FocusList x xs) (FocusList x2 xs2) = FocusList (zipWith (f) 
 -- Je kunt `testFold` gebruiken om je functie te testen. Denk eraan dat de backwards lijst achterstevoren staat, en waarschijnlijk omgekeerd moet worden.
 
 foldFocusList :: (a -> a -> a) -> FocusList a -> a
-foldFocusList f fl = undefined
+-- foldFocusList f (FocusList fw bw) = (foldl1 f bw) `f` (foldl1 f fw)
+foldFocusList f (FocusList fw bw) =  (foldr1 f (reverse bw)) `f` (foldl1 f fw)
 
 -- | Test function for the behaviour of foldFocusList.
 testFold :: Bool
@@ -165,7 +179,10 @@ type Rule = Context -> Cell
 safeHead :: a        -- ^ Default value
          -> [a]      -- ^ Source list
          -> a
-safeHead = undefined
+-- ^Als source list leeg is, geef default (d) terug.
+safeHead d [] = d
+-- ^Geef head terug van lijst
+safeHead d (x:xs) = x
 
 -- TODO Schrijf en documenteer een functie takeAtLeast die werkt als `take`, maar met een extra argument. Als de lijst lang genoeg is, bijvoorbeeld
 -- `takeAtLeast 3 "0" ["1","2","3","4","5"]` dan werkt de functie hetzelfde als `take` en worden de eerste `n` (hier 3) elementen teruggegeven.
@@ -175,16 +192,19 @@ takeAtLeast :: Int   -- ^ Number of items to take
             -> a     -- ^ Default value added to the right as padding
             -> [a]   -- ^ Source list
             -> [a]
-takeAtLeast = undefined
+
+takeAtLeast n d list
+  | n <= length list = take n list
+  | (length list) < n = list  ++ replicate (n - length list) d
 
 -- TODO Schrijf en documenteer een functie context die met behulp van takeAtLeast de context van de focus-cel in een Automaton teruggeeft. Niet-gedefinieerde cellen zijn per definitie Dead.
 context :: Automaton -> Context
-context = undefined
+context (FocusList (f:fw) bw) = [last bw, f, head fw]
 
 -- TODO Schrijf en documenteer een functie expand die een Automaton uitbreid met een dode cel aan beide uiteindes. We doen voor deze simulatie de aanname dat de "known universe"
 -- iedere ronde met 1 uitbreid naar zowel links als rechts.
 expand :: Automaton -> Automaton
-expand = undefined
+expand (FocusList fw bw) = (FocusList (Dead : fw) (Dead : []))
 
 -- | A sequence of Automaton-states over time is called a TimeSeries.
 type TimeSeries = [Automaton]
@@ -197,7 +217,10 @@ iterateRule :: Rule          -- ^ The rule to apply
             -> Int           -- ^ How many times to apply the rule
             -> Automaton     -- ^ The initial state
             -> TimeSeries
+-- ^ Als de Rule niet toegepast wordt, geef de originele Automaton terug.
 iterateRule r 0 s = [s]
+
+
 iterateRule r n s = s : iterateRule r (pred n) (fromList $ applyRule $ leftMost $ expand s)
   where applyRule :: Automaton -> Context
         applyRule (FocusList [] bw) = []
