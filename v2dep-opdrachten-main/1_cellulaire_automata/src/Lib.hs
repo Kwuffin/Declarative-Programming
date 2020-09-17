@@ -52,7 +52,7 @@ toList (FocusList forward backward) =  addTo forward backward
 -- TODO Schrijf en documenteer een functie die een gewone lijst omzet in een focus-list. Omdat een gewone lijst geen focus heeft moeten we deze kiezen; dit is altijd het eerste element.
 fromList :: [a] -> FocusList a
 -- ^Append de head in een aparte lijst. In de nieuwe FocusList is de 'head' nu de focus.
-fromList (x:xs) = FocusList [x] xs
+fromList list = FocusList list []
 
 -- | Move the focus one to the left
 goLeft :: FocusList a -> FocusList a
@@ -176,35 +176,49 @@ type Rule = Context -> Cell
 -- * Rule Iteration
 
 -- TODO Schrijf en documenteer een functie safeHead die het eerste item van een lijst geeft; als de lijst leeg is wordt een meegegeven default values teruggegeven.
+{- | 
+safeHead pattern matchet op een lege Source list.
+Als deze leeg is, geeft hij de Default value terug.
+Als deze niet leeg is, geeft hij de head van de Source list terug.
+-}
 safeHead :: a        -- ^ Default value
          -> [a]      -- ^ Source list
          -> a
--- ^Als source list leeg is, geef default (d) terug.
 safeHead d [] = d
--- ^Geef head terug van lijst
 safeHead d (x:xs) = x
 
 -- TODO Schrijf en documenteer een functie takeAtLeast die werkt als `take`, maar met een extra argument. Als de lijst lang genoeg is, bijvoorbeeld
 -- `takeAtLeast 3 "0" ["1","2","3","4","5"]` dan werkt de functie hetzelfde als `take` en worden de eerste `n` (hier 3) elementen teruggegeven.
 -- Als dat niet zo is dan worden zoveel mogelijk elementen teruggegeven, en wordt de lijst daarna tot de gevraagde lengte aangevuld met een
 -- meegegeven default-waarde: `takeAtLeast 3 "0" ["1"] ~> ["1", "0", "0"]`.
+
+{- |
+Als het aantal elementen dat je uit de lijst wilt pakken kleiner of gelijk is dan de lengte van de lijst:
+voer de normale 'take' functie uit.
+als n <= lengte lijst -> voer normale 'take' funcite uit
+
+Als het aantal elementen dat je uit de lijst wilt pakken groter is dan de lengte van de lijst:
+maak een lijst toe met n - lengte lijst keer de Default waarde.
+voeg deze lijst samen met de Source list.
+als n > lengte lijst -> Source list ++ lijst met (n - lengte lijst) keer de Default waarde.
+-}
 takeAtLeast :: Int   -- ^ Number of items to take
             -> a     -- ^ Default value added to the right as padding
             -> [a]   -- ^ Source list
             -> [a]
-
 takeAtLeast n d list
   | n <= length list = take n list
-  | (length list) < n = list  ++ replicate (n - length list) d
+  | n > (length list)  = list  ++ replicate (n - length list) d
 
 -- TODO Schrijf en documenteer een functie context die met behulp van takeAtLeast de context van de focus-cel in een Automaton teruggeeft. Niet-gedefinieerde cellen zijn per definitie Dead.
 context :: Automaton -> Context
-context (FocusList (f:fw) bw) = [last bw, f, head fw]
+context (FocusList fw bw) = (takeAtLeast 1 Dead bw) ++ (takeAtLeast 2 Dead fw)
+
 
 -- TODO Schrijf en documenteer een functie expand die een Automaton uitbreid met een dode cel aan beide uiteindes. We doen voor deze simulatie de aanname dat de "known universe"
 -- iedere ronde met 1 uitbreid naar zowel links als rechts.
 expand :: Automaton -> Automaton
-expand (FocusList fw bw) = (FocusList (Dead : fw) (Dead : []))
+expand (FocusList fw bw) = (FocusList (fw ++ [Dead]) (bw ++ [Dead]))
 
 -- | A sequence of Automaton-states over time is called a TimeSeries.
 type TimeSeries = [Automaton]
@@ -217,10 +231,10 @@ iterateRule :: Rule          -- ^ The rule to apply
             -> Int           -- ^ How many times to apply the rule
             -> Automaton     -- ^ The initial state
             -> TimeSeries
--- ^ Als de Rule niet toegepast wordt, geef de originele Automaton terug.
+-- Als de Rule niet toegepast wordt, geef de originele Automaton terug.
 iterateRule r 0 s = [s]
 
-
+-- Pas Rule (r) toe op de Automaton (s) 
 iterateRule r n s = s : iterateRule r (pred n) (fromList $ applyRule $ leftMost $ expand s)
   where applyRule :: Automaton -> Context
         applyRule (FocusList [] bw) = []
@@ -238,8 +252,15 @@ showPyramid zs = unlines $ zipWith showFocusList zs $ reverse [0..div (pred w) 2
 
 -- TODO Vul de functie rule30 aan met de andere 7 gevallen. Je mag de voorbeeldregel aanpassen/verwijderen om dit in minder regels code te doen. De underscore _ is je vriend.
 rule30 :: Rule
+-- ^ Definieer de ruleset 
+rule30 [Alive, Alive, Alive] = Dead
+rule30 [Alive, Alive, Dead] = Dead
+rule30 [Alive, Dead, Alive] = Dead
+rule30 [Alive, Dead, Dead] = Alive
+rule30 [Dead, Alive, Alive] = Alive
+rule30 [Dead, Alive, Dead] = Alive
+rule30 [Dead, Dead, Alive] = Alive
 rule30 [Dead, Dead, Dead] = Dead
--- ...
 
 -- Je kan je rule-30 functie in GHCi testen met het volgende commando:
 -- putStrLn . showPyramid . iterateRule rule30 15 $ start
@@ -271,8 +292,14 @@ rule30 [Dead, Dead, Dead] = Dead
 -- TODO Definieer allereerst een constante `inputs` die alle 8 mogelijke contexts weergeeft: [Alive,Alive,Alive], [Alive,Alive,Dead], etc.
 -- Je mag dit met de hand uitschrijven, maar voor extra punten kun je ook een lijst-comprehensie of andere slimme functie verzinnen.
 
+{- |
+inputs maakt een lijst met elk mogelijke combinatie aan dode en levende cellen (2^3).
+Er zitten drie cellen in een Context (a,b,c), en elke cel heeft een state (Dead, Alive).
+-}
 inputs :: [Context]
-inputs = undefined
+inputs = [[a, b, c] | a <- [Alive, Dead],
+                      b <- [Alive, Dead],
+                      c <- [Alive, Dead] ]
 
 -- | If the given predicate applies to the given value, return Just the given value; in all other cases, return Nothing.
 guard :: (a -> Bool) -> a -> Maybe a
@@ -288,14 +315,23 @@ binary = map toEnum . reverse . take 8 . (++ repeat 0)
 -- TODO Schrijf en documenteer een functie mask die, gegeven een lijst Booleans en een lijst elementen alleen de elementen laat staan die (qua positie) overeenkomen met een True.
 -- Je kan hiervoor zipWith en Maybe gebruiken (check `catMaybes` in Data.Maybe) of de recursie met de hand uitvoeren.
 mask :: [Bool] -> [a] -> [a]
-mask = undefined
+-- mask bList eList = zipWith (\bList eList -> if (head bList) then Just (head eList) else Nothing) bList eList
+mask bList eList = catMaybes $ zipWith (\b e -> if b then Just e else Nothing) bList eList
 
 -- TODO Combineer `mask` en `binary` met de library functie `elem` en de eerder geschreven `inputs` tot een rule functie. Denk eraan dat het type Rule een short-hand is voor een
 -- functie-type, dus dat je met 2 argumenten te maken hebt. De Int staat hierbij voor het nummer van de regel, dat je eerst naar binair moet omrekenen; de Context `input` is
 -- waarnaar je kijkt om te zien of het resultaat met de gevraagde regel Dead or Alive is. Definieer met `where` subset van `inputs` die tot een levende danwel dode cel leiden.
 -- Vergeet niet je functie te documenteren.
+{- |
+n -> binaire code [Bool]
+aliveList = mask [Bool] inputs
+elem aliveList -> if true: Alive, else: Dead.
+-}
 rule :: Int -> Rule
-rule n input = undefined
+-- rule = undefined
+rule n input = if elem (mask (binary n) input) inputs
+                then True
+                else False
 
 {- Je kan je rule-functie in GHCi testen met variaties op het volgende commando:
 
