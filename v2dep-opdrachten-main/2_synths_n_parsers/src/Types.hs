@@ -21,6 +21,7 @@ module Types ( Beats, Hz, Samples, Seconds, Semitones, Track, Ringtone
 
 import Data.Int (Int32)
 
+import Util
 type Pulse = [Float]
 type Seconds = Float
 type Samples = Float
@@ -46,14 +47,24 @@ intSound = IntFrames
 -- TODO Maak instances voor `Sound` voor `Semigroup` en `Monoid`. De monoid-operatie staat in dit geval voor het sequentieel (achter elkaar) combineren van audiofragmenten. Het is van belang dat `IntFrames` alleen met `IntFrames` worden gecombineerd, en dito voor `FloatFrames`. Bij twee verschillende gevallen moet je beiden naar hetzelfde formaat converteren, idealiter `FloatFrames`. Wat is een leeg audiofragment in deze context?
 
 instance Semigroup Sound where
+  (<>) (IntFrames x) (IntFrames y) = IntFrames (x ++ y)
+  (<>) (FloatFrames x) (FloatFrames y) = FloatFrames (x ++ y)
+  (<>) (FloatFrames x) (IntFrames y) = FloatFrames (x ++ getAsFloats (intSound y))
+  (<>) (IntFrames x) (FloatFrames y) = FloatFrames (getAsFloats (intSound x) ++ y)
+
 
 instance Monoid Sound where
+  mempty = IntFrames[]
+
 
 -- TODO Maak een operator `(<+>)` die twee `Sound`s  tot een enkel `Sound` combineert door de geluiden tegelijk af te spreken. Dit mag door de frames als in een `zipWith (+)` samen te voegen, maar in dit geval wordt niet de kortste maar de langste lijst aangehouden (in dat geval wordt enkel het aanwezige geluid weergegeven). Je hoeft deze operator alleen op `FloatFrames` te matchen, de laatste regel converteert alles hierheen als een of beide argumenten in `IntFrames` staan.
 
 (<+>) :: Sound -> Sound -> Sound
-(FloatFrames x) <+> (FloatFrames y) = undefined
-x <+> y = asFloatSound x <> asFloatSound y
+-- (FloatFrames x) <+> (FloatFrames y) = FloatFrames (zipWith (+) x y)
+(<+>) (FloatFrames x) (FloatFrames y)
+  | length x >= length y = FloatFrames (zipWithL (+) x y)
+  | length x < length y = FloatFrames (zipWithR (+) x y)
+x <+> y = asFloatSound x <+> asFloatSound y
 
 asFloatSound :: Sound -> Sound
 asFloatSound (IntFrames fs) = floatSound $ map ( (/ fromIntegral (div (maxBound @Int32 ) 2 )) . fromIntegral ) fs
@@ -61,7 +72,8 @@ asFloatSound fframe = fframe
 
 -- TODO Maak een functie `asIntSOund` die als inverse van `asFloatSound` fungeert.
 asIntSound :: Sound -> Sound
-asIntSound = undefined
+asIntSound (FloatFrames fs) = intSound $ map (\x -> round (fromIntegral ( maxBound @Int32 `div` 2 ) * x)) fs
+asIntSound fframe = fframe
 
 getAsFloats :: Sound -> [Float]
 getAsFloats sound = case asFloatSound sound of
@@ -91,8 +103,8 @@ instance Semigroup Modifier where
 -- TODO Maak een functie `modifyInstrument) die een `Modifier` met een `Instrument` combineert. Gebruik een lambda om een nieuw instrument terug te geven, waarbij de functie in de modifier met de functie in het instrument gecomposed wordt.
 
 modifyInstrument :: Instrument -> Modifier -> Instrument
-modifyInstrument = undefined
+modifyInstrument (Instrument inst) (Modifier mod) = Instrument (\x y -> mod $ (inst x y))
 
 -- TODO Maak een functie `arrange` die de functie in het meegegeven `Instrument` toepast op de frequentie en duur. Het resultaat wordt als `Sound` verpakt.
 arrange :: Instrument -> Hz -> Seconds -> Sound
-arrange = undefined
+arrange (Instrument inst) h s = floatSound (inst h s)
