@@ -14,7 +14,7 @@
 -- TODO Voel je vrij je eigen instrumenten toe te voegen door te experimenteren met generators en modifiers.
 -- De beste toevoegingen kunnen leiden tot extra punten en worden toegevoegd in het practicum van volgend jaar.
 --
-module Instruments (sampleRate, pitchStandard, generateWave, silence, defaultInstrument, defaultSquare, defaultTriangle, pop, twisted, noise, kick, bass) where
+module Instruments (sampleRate, pitchStandard, generateWave, silence, defaultInstrument, defaultSquare, defaultTriangle, pop, twisted, noise, kick, bass, pad) where
 
 import Types (Beats, Hz, Samples, Seconds, Semitones, Tone(..), Octave(..), Duration(..), Note(..), Sound, floatSound, Instrument, instrument, Modifier, modifier, modifyInstrument, arrange)
 import Util (zipWithL, comb)
@@ -27,7 +27,10 @@ pitchStandard = 440.0
 
 -- TODO Maak een functie silence die een gegeven aantal seconden aan stilte genereert. Hiervoor kun je een lijst met het juiste aantal (`sampleRate * seconden`) keer `0.0` teruggeven, verpakt tot het `Sound`-datatype.
 silence :: Seconds -> Sound
-silence = undefined
+-- silence s = floatSound (replicate (round(sampleRate) * s) 0)
+makeInt :: Float -> Int
+makeInt i = round i
+silence s = floatSound (replicate (makeInt s) 0.0)
 
 sine :: Instrument
 sine = instrument $ \hz duration -> map (sin . (* (hz * pi * 2 / sampleRate))) [0.0..sampleRate * duration]

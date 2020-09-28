@@ -11,7 +11,7 @@
     Deze module bevat parsers en functies om deze te combineren. We gebruiken simpele parsers om meer complexe parsers op te bouwen.
 -}
 
-module Parsers (Parser, parse) where
+module Parsers (Parser, parse, pComplementCharSet, pString, pOptional, pNumber, pOctave, pHeader, parse) where
 
 import Types (Octave, Beats, Duration(..), Note(..), Tone(..))
  

@@ -148,3 +148,54 @@ test-suite synth-types
 
   default-language:    Haskell2010
   default-extensions:  OverloadedStrings, TypeApplications
+
+test-suite synth-instruments
+  type:                exitcode-stdio-1.0
+  hs-source-dirs:      test
+  main-is:             TestInstruments.hs
+
+  build-depends:       base ^>= 4.12.0.0
+                     , synth
+                     , hspec
+
+  ghc-options:         -Wall
+                       -threaded
+                       -rtsopts
+                       -with-rtsopts=-N
+                       -Wincomplete-uni-patterns
+                       -Wincomplete-record-updates
+                       -Wcompat
+                       -Widentities
+                       -Wredundant-constraints
+                       -fhide-source-paths
+                       -Wmissing-export-lists
+                       -Wpartial-fields
+
+  default-language:    Haskell2010
+  default-extensions:  OverloadedStrings, TypeApplications
+
+test-suite synth-parsers
+  type:                exitcode-stdio-1.0
+  hs-source-dirs:      test
+  main-is:             TestParsers.hs
+
+  build-depends:       base ^>= 4.12.0.0
+                     , synth
+                     , hspec
+                     , transformers
+
+  ghc-options:         -Wall
+                       -threaded
+                       -rtsopts
+                       -with-rtsopts=-N
+                       -Wincomplete-uni-patterns
+                       -Wincomplete-record-updates
+                       -Wcompat
+                       -Widentities
+                       -Wredundant-constraints
+                       -fhide-source-paths
+                       -Wmissing-export-lists
+                       -Wpartial-fields
+
+  default-language:    Haskell2010
+  default-extensions:  OverloadedStrings, TypeApplications

@@ -18,7 +18,7 @@ In dit practicum gaan we aan de slag met audio-synthesis. We gaan audio generere
 - Maak een functie `modifyInstrument) die een `Modifier` met een `Instrument` combineert. Gebruik een lambda om een nieuw instrument terug te geven, waarbij de functie in de modifier met de functie in het instrument gecomposed wordt. (10 punten)
 - Maak een functie `arrange` die de functie in het meegegeven `Instrument` toepast op de frequentie en duur. Het resultaat wordt als `Sound` verpakt. (10 punten)
 
-## `src/Instruments.hs` (35 punten)
+## `src/Instruments.hs` (25 punten)
 - Maak een functie silence die een gegeven aantal seconden aan stilte genereert. Hiervoor kun je een lijst met het juiste aantal (`sampleRate * seconden`) keer `0.0` teruggeven, verpakt tot het `Sound`-datatype. (10 punten)
 - Maak een `Instrument` `defaultSquare` gebaseerd op de `squareWave`, gecombineerd met een `attack` en `release` `Modifier`. (5 punten)
 - Maak een `Instrument` `defaultTrangle` gebaseerd op de `triangleWave`, gecombineerd met een `attack` en `release` `Modifier`. (5 punten)
