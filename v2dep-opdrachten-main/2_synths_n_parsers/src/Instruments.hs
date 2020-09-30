@@ -1,32 +1,128 @@
-module Main (main) where
+{-|
+    Module      : Instruments
+    Description : Derde checkpoint voor V2DeP: audio-synthesis en ringtone-parsing
+    Copyright   : (c) Brian van der Bijl, 2020
+    License     : BSD3
+    Maintainer  : brian.vanderbijl@hu.nl
+    In dit practicum gaan we audio genereren op basis van een abstracte representatie van noten.
+    Daarnaast gaan we tekst in het RTTL formaat parsen tot deze abstracte representatie.
+    Deze module bevat de functies om noten om te zetten in Float/Integer based audio-frames, alsook instrumenten en de bouwstenen om meer gecompliceerde elementen te maken.
+-}
 
-import Test.Hspec
-import Types
-import Instruments
+-- TODO Voel je vrij je eigen instrumenten toe te voegen door te experimenteren met generators en modifiers.
+-- De beste toevoegingen kunnen leiden tot extra punten en worden toegevoegd in het practicum van volgend jaar.
+--
+module Instruments (sampleRate, pitchStandard, generateWave, silence, defaultInstrument, defaultSquare, defaultTriangle, pop, twisted, noise, kick, bass, pad) where
 
-main :: IO ()
-main = mapM_ hspec [test_silence, test_defaultSquare, test_defaultTriangle, test_pad]
+import Types (Beats, Hz, Samples, Seconds, Semitones, Tone(..), Octave(..), Duration(..), Note(..), Sound, floatSound, Instrument, instrument, Modifier, modifier, modifyInstrument, arrange)
+import Util (zipWithL, comb)
 
-test_silence :: Spec
-test_silence = do
-  describe "Instruments.silence" $ do
-    it "generates silence" $ do
-      asFloatSound (silence 0.001) `shouldBe` floatSound (replicate 49 0.0)
+sampleRate :: Samples
+sampleRate = 48000.0
 
-test_defaultSquare :: Spec
-test_defaultSquare = do
-  describe "Instruments.defaultSquare" $ do
-    it "generates a square wave modified by attack and release" $ do
-      asFloatSound (arrange defaultSquare 440 0.001) `shouldBe` floatSound [0.0,4.7000005e-5,9.200001e-5,1.3500001e-4,1.7600002e-4,2.1500002e-4,2.5200003e-4,2.87e-4,3.2000005e-4,3.5100002e-4,3.8000004e-4,4.0700004e-4,4.3200003e-4,4.55e-4,4.7600004e-4,4.9500004e-4,5.1200006e-4,5.2700005e-4,5.4000004e-4,5.5100006e-4,5.600001e-4,5.6700007e-4,5.7200005e-4,5.750001e-4,5.76e-4,5.750001e-4,5.7200005e-4,5.6700007e-4,-5.600001e-4,-5.5100006e-4,-5.4000004e-4,-5.2700005e-4,-5.1200006e-4,-4.9500004e-4,-4.7600004e-4,-4.55e-4,-4.3200003e-4,-4.0700004e-4,-3.8000004e-4,-3.5100002e-4,-3.2000005e-4,-2.87e-4,-2.5200003e-4,-2.1500002e-4,-1.7600002e-4,-1.3500001e-4,-9.200001e-5,-4.7000005e-5,-0.0]
+pitchStandard :: Hz
+pitchStandard = 440.0
 
-test_defaultTriangle :: Spec
-test_defaultTriangle = do
-  describe "Instruments.defaultTriangle" $ do
-    it "generates a triangle wave modified by attack and release" $ do
-      asFloatSound (arrange defaultTriangle 440 0.001) `shouldBe` floatSound [0.0,2.7070062e-6,1.0597641e-5,2.3326325e-5,4.05475e-5,6.191556e-5,8.708497e-5,1.1571009e-4,1.4744543e-4,1.8194536e-4,2.188643e-4,2.578567e-4,2.9857698e-4,3.4067954e-4,3.838189e-4,4.276493e-4,4.7182542e-4,5.1600114e-4,5.201682e-4,4.990288e-4,4.7492626e-4,4.4820606e-4,4.1921367e-4,3.8829466e-4,3.557947e-4,3.2205935e-4,2.874343e-4,2.522648e-4,2.168968e-4,1.8167557e-4,1.4694694e-4,1.1305627e-4,8.034929e-5,4.917151e-5,1.9868454e-5,-7.214186e-6,-3.173096e-5,-5.3336174e-5,-7.1684364e-5,-8.642989e-5,-9.722714e-5,-1.0373064e-4,-1.0559466e-4,-1.0247381e-4,-9.4022405e-5,-7.989492e-5,-5.9745726e-5,-3.322928e-5,-0.0]
+-- TODO Maak een functie silence die een gegeven aantal seconden aan stilte genereert. Hiervoor kun je een lijst met het juiste aantal (`sampleRate * seconden`) keer `0.0` teruggeven, verpakt tot het `Sound`-datatype.
+silence :: Seconds -> Sound
+makeInt :: Float -> Int
+makeInt i = round i
+silence s = floatSound (replicate (makeInt s) 0.0)
 
-test_pad :: Spec
-test_pad = do
-  describe "Instruments.pad" $ do
-    it "pads a given range of notes with a quarter pause, both left and right" $ do
-      pad [Note C Four Quarter] `shouldBe` [Pause Quarter, Note C Four Quarter, Pause Quarter]
+sine :: Instrument
+sine = instrument $ \hz duration -> map (sin . (* (hz * pi * 2 / sampleRate))) [0.0..sampleRate * duration]
+
+noise :: Instrument
+noise = instrument $ \_ duration -> map f [0.0..sampleRate * duration - 1000] <> replicate 1000 0
+  where f t = let x = min (sin t) (cos t)
+                  y = max (300+200*cos t) (300+200*sin t)
+                  z = max (300+200*cos(t*1.5)) (300+200*sin (t*1.7))
+                  s1 = tan(t*2) * sin(x*y*600) * abs (sin (t/10)) * abs (cos (t/5))
+                  s2 = abs (sin (t*10)) * sin (x*y)
+                  s3 = sin (sin (z*t*0.1))
+              in (s1+s2+s3) / 3
+
+bass :: Instrument
+bass = instrument $ \hz duration -> zipWithL (+) (replicate (ceiling (sampleRate * duration)) 0)
+                                  . map (sin . (* (hz * pi * 2 / sampleRate))) $ [hz, hz-0.1..0]
+
+triangle :: Float -> Float
+triangle x = (2/pi) * asin (sin (pi*x/2))
+
+square :: Float -> Float
+square = signum . cos
+
+squareWave :: Instrument
+squareWave = instrument $ \hz duration -> map (square . (* (hz * pi * 2 / sampleRate))) [0.0..sampleRate * duration]
+
+triangleWave :: Instrument
+triangleWave = instrument $ \hz duration -> map (triangle . (* (hz * pi * 2 / sampleRate))) [0.0..sampleRate * duration]
+
+kick :: Instrument
+kick = instrument $ \hz duration -> zipWithL (+) (replicate (ceiling (sampleRate * duration)) 0)
+                                  . map (ground . (* (hz * 16 * pi * 2 / sampleRate))) $ map (\e -> 0.996**e * hz) [1..0.5*sampleRate*duration]
+  where ground = comb (+) square triangle
+
+attack :: Modifier
+attack = modifier $ zipWith (*) . map (min 1.0) $ [0.0,0.001..]
+
+release :: Modifier
+release = modifier $ \output -> zipWith (*) output . reverse . take (length output) . map (min 1.0) $ [0.0,0.001..]
+
+distort :: Modifier
+distort = modifier $ reverse . zipWith (*) (map (max 0.0) [0.0,0.001..]) . reverse
+
+popRelease :: Modifier
+popRelease = modifier $ zipWith (*) . map (max 0.0) $ [1.0,0.999..]
+
+defaultInstrument :: Instrument
+defaultInstrument = modifyInstrument sine (attack <> release)
+
+-- TODO Maak een `Instrument` `defaultSquare` gebaseerd op de `squareWave`, gecombineerd met een `attack` en `release` `Modifier`.
+defaultSquare :: Instrument
+{-
+Geeft de squareWave en attack door aan modifyInstrument die ik in Types.hs hebben gedefinieerd.
+De output daarvan wordt als instrument gebruikt om nogmaals modifyInstrument op te roepen, maar deze keer met release als modifier.
+-}
+defaultSquare = modifyInstrument (modifyInstrument squareWave attack) release
+
+-- TODO Maak een `Instrument` `defaultTrangle` gebaseerd op de `triangleWave`, gecombineerd met een `attack` en `release` `Modifier`.
+defaultTriangle :: Instrument
+{-
+Geeft de triangleWave en attack door aan modifyInstrument.
+De output daarvan wordt als instrument gebruikt om nogmaals modifyInstrument op te roepen, maar deze keer met release als modifier.
+-}
+defaultTriangle = modifyInstrument (modifyInstrument triangleWave attack) release
+
+pop :: Instrument
+pop = modifyInstrument sine (attack <> popRelease)
+
+twisted :: Instrument
+twisted = modifyInstrument sine (attack <> distort)
+
+-- TODO Maak een functie `pad` die een lijst noten "pad" met vooraf en achteraf quarter-note pauze. Deze wordt gebruikt in de `generateWave` functie om de WAV-export beter te laten klinken.
+pad :: [Note] -> [Note]
+pad n = Pause (Quarter) : n ++ [Pause (Quarter)]
+
+generateWave :: Beats -> Instrument -> [Note] -> Sound
+generateWave bpm inst = mconcat . map note . pad
+  where note :: Note -> Sound
+        note (Note tone oct dur) = arrange inst (pitch tone oct) (beats dur * 240/bpm)
+        note (Pause dur) = floatSound $ replicate (ceiling $ sampleRate * beats dur * 240/bpm) 0
+
+toFloat :: Enum a => a -> Float
+toFloat = fromIntegral . fromEnum
+
+pitch :: Tone -> Octave -> Hz
+pitch tone oct = ((2**) . subtract 4 $ toFloat oct) * freq (toFloat tone)
+  where freq :: Semitones -> Hz -- [https://pages.mtu.edu/~suits/NoteFreqCalcs.html]
+        freq n = pitchStandard * (2 ** (1.0 / 12.0)) ** n
+
+beats :: Duration -> Float
+beats Full = 1
+beats Half = 1/2
+beats Quarter = 1/4
+beats Eighth = 1/8
+beats Sixteenth = 1/16
+beats Thirtysecond = 1/32
+beats (Dotted d) = 3/2 * beats d
