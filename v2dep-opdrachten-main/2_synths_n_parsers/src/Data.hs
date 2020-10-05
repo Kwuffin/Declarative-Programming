@@ -11,7 +11,7 @@
     Deze module bevat voorbeelden van RTTL-gecodeerde strings en de abstracte noten-representatie.
 -}
 
-module Data (sandstorm', zombie', sandstorm, children, axelf, ppk, numberone, rick, takeoneme) where
+module Data (sandstorm', zombie', sandstorm, children, axelf, ppk, numberone, rick, takeonme) where
 
 import Types (Track, Ringtone, Tone(..), Note(..), Octave(..), Duration(..))
 import Instruments (defaultInstrument, noise, kick, twisted)

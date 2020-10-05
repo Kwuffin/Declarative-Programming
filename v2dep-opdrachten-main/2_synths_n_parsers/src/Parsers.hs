@@ -15,6 +15,7 @@ module Parsers (Parser, parse, pCharSet, pComplementCharSet, pString, pOptional,
 
 import Types (Octave, Beats, Duration(..), Note(..), Tone(..))
  
+import Control.Applicative ((<|>))
 import Control.Monad.Trans.State (StateT(..), evalStateT, put, get)
 import Data.Maybe (isJust, fromMaybe)
 import Data.Char (toUpper)
