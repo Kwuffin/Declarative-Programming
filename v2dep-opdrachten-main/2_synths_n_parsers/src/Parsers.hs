@@ -153,4 +153,4 @@ pRTTL = do (t, d, o, b) <- pHeader
 
 -- TODO Schrijf een functie `parse` die `pRTTL` aanroept. Bedenk hierbij dat een `Parser` eigenlijk niet meer is dan een `StateT` met een `Maybe` erin. 
 parse :: String -> Maybe (String, [Note], Beats)
-parse = parse str = evalStateT pRTTL str
+parse str = evalStateT pRTTL str
