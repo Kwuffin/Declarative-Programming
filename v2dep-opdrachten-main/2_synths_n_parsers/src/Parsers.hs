@@ -11,7 +11,7 @@
     Deze module bevat parsers en functies om deze te combineren. We gebruiken simpele parsers om meer complexe parsers op te bouwen.
 -}
 
-module Parsers (Parser, parse, pComplementCharSet, pString, pOptional, pNumber, pOctave, pHeader, parse) where
+module Parsers (Parser, parse, pCharSet, pComplementCharSet, pString, pOptional, pRepeat, pNumber, pOctave, pHeader, parse) where
 
 import Types (Octave, Beats, Duration(..), Note(..), Tone(..))
  
@@ -32,15 +32,30 @@ pCharSet cs = do input <- uncons <$> get
 
 -- TODO Schrijf een `Parser` `pComplementCharSet` die een lijst van karakters meekrijgt (ook wel een `String`) en het eerste karakter parset wanneer dit niet in de meegegeven set karakters zit.
 pComplementCharSet :: CharSet -> Parser Char
-pComplementCharSet cs = undefined
+pComplementCharSet cs = do input <- uncons <$> get
+                           case input of
+                             Just (h, t) -> if h `elem` cs then mzero else put t >> return h
+                             Nothing -> mzero
 
 -- TODO Schrijf een `Parser` `pString` die een gegegeven `String` probeert te parsen. Gebruik hiervoor `do` notatie; parse een enkele letter met `pCharSet` en parse de rest recursief met `pString`; combineer beide waarden weer voordat je deze `return`t. Vergeet niet een geval voor een lege `String`  te schrijven.
 pString :: String -> Parser String
-pString = undefined
+{- |
+Parset de eerste Char uit de lijst en doet deze in 'firstChar'
+Parset daarna recursief de tail van de lijst en zet de Chars in 'rest'
+Concateneert de lijsten en returnt deze
+Pattern match als de lijst leeg is, return dan mzero.
+-}
+pString (x:xs) = do firstChar <- pCharSet [x]
+                    rest <- pString xs
+                    return $ firstChar : rest
+pString []     = return mzero
 
 -- TODO Schrijf een `Parser` `pOpttional` die gegeven een `Parser` optioneel maakt. Als de `Parser` slaagt wordt een `Just` value teruggegeven, zo niet wordt `Nothing` ge`return`ed. Je kunt hiervoor gebruik maken van `mplus` uit `Control.Monad`.
 pOptional :: Parser a -> Parser (Maybe a)
-pOptional p = undefined
+{- |
+fmap pakt en voert de meegegeven Parser uit.
+-}
+pOptional p = fmap Just p <|> return Nothing
 
 pRepeatSepBy :: Parser a -> Parser b -> Parser [b]
 pRepeatSepBy sep p = (:) <$> p <*> mplus (sep *> pRepeatSepBy sep p) (return [])
@@ -51,14 +66,14 @@ pEmpty = return ()
 
 -- TODO Combineer `pRepeatSepBy` en `pEmpty` tot een `Parser` `pRepeat` die een enkele `Parser` herhaalt.
 pRepeat :: Parser a -> Parser [a]
-pRepeat = undefined
+pRepeat p = pRepeatSepBy pEmpty p
 
 numbers :: CharSet
 numbers = "0123456789"
 
 -- TODO Combineer `pRepeat` en `pCharSet` tot een `Parser` die een getal als `String` leest, en roep hier `read` op aan om een `Int` terug te geven.
 pNumber :: Parser Int
-pNumber = undefined
+pNumber = fmap (read) (pRepeat $ pCharSet numbers)
 
 pTone :: Parser Tone
 pTone = do tone <- tRead . toUpper <$> pCharSet "abcdefg"
@@ -77,7 +92,12 @@ pTone = do tone <- tRead . toUpper <$> pCharSet "abcdefg"
 
 -- TODO Schrijf een `Parser` `pOctave`. Je kunt `toEnum` gebruiken om een `Int` naar een `Octave` te casten.
 pOctave :: Parser Octave
-pOctave = undefined
+{- |
+toEnum wordt toegepast op pNumber
+-}
+pOctave = toEnum <$> pNumber
+-- pOctave = do input <- get 
+--              if (head input) `elem` numbers then modify tail >> return (toEnum (read [(head input)])) else mzero
 
 pDuration :: Parser Duration
 pDuration = do number <- pNumber
@@ -108,7 +128,7 @@ pComma = () <$ do _ <- pCharSet ","
 
 -- TODO Pas deze `Parser` aan zodat de de titel uit de RTTL string wordt gehaald en in de plaats van PLACEHOLDER wordt teruggegeven.
 pHeader :: Parser (String, Duration, Octave, Beats)
-pHeader = do _ <- pRepeat (pComplementCharSet ":")
+pHeader = do title <- pRepeat (pComplementCharSet ":")
              _ <- pCharSet ":"
              _ <- pOptional (pCharSet " ")
              _ <- pString "d="
@@ -121,7 +141,7 @@ pHeader = do _ <- pRepeat (pComplementCharSet ":")
              bpm <- fromIntegral <$> pNumber
              _ <- pCharSet ":"
              _ <- pOptional (pCharSet " ")
-             return ("PLACEHOLDER", duration, octave, bpm)
+             return (title, duration, octave, bpm)
 
 pSeparator :: Parser ()
 pSeparator = () <$ foldl1 mplus [pString " ", pString ", ", pString ","]
@@ -133,4 +153,4 @@ pRTTL = do (t, d, o, b) <- pHeader
 
 -- TODO Schrijf een functie `parse` die `pRTTL` aanroept. Bedenk hierbij dat een `Parser` eigenlijk niet meer is dan een `StateT` met een `Maybe` erin. 
 parse :: String -> Maybe (String, [Note], Beats)
-parse = undefined
+parse = parse str = evalStateT pRTTL str

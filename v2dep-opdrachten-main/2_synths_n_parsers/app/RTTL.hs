@@ -20,9 +20,35 @@ import Data (ppk)
 import IO (playRTTL)
 
 -- TODO Schrijf een main-functie die de gebruiker om een RTTL encoded String vraagt, het `instrumentMenu` print en vervolgens een getal overeenkomstig met een instrument. De string wordt met het gekozen element met `playRTTL` afgespeeld. Als er geen geldig instrument wordt meegegeven wordt `defaultInstrument` gepakt.
+{- |
+Vraagt de gebruiker om een RTTL-encoded String
+rttl_string = gebruiker input
 
+Print het instrumentMenu
+Vraagt gebruiker om een instrument
+instrKeuze = gebruiker input
+
+Maak van string een int.
+instr is de maybe Instrument die uit chooseInstrument komt.
+
+Als instr Nothing is, voer RTTL met default waarden uit.
+Als instr niet Nothing is, voer playRTTL uit met custom waarden.
+-}
 main :: IO ()
-main = playRTTL defaultInstrument ppk
+main = do 
+    putStrLn "Geef een RTTL encoded String."
+    rttl_string <- getLine
+
+    putStrLn instrumentMenu
+    putStrLn "Kies een instrument"
+    instrKeuze <- getLine
+
+    let intInstr = read instrKeuze
+    let instr = chooseInstrument intInstr
+
+    case instr of
+        Nothing -> playRTTL defaultInstrument ppk
+        Just x -> playRTTL x rttl_string
 
 instrumentMenu :: String
 instrumentMenu = unlines [ "1: sine"
@@ -36,6 +62,18 @@ instrumentMenu = unlines [ "1: sine"
                          ]
 
 -- TODO Schrijf een functie `chooseInstrument` die een `Int` interpreteert tot een `Maybe Instrument` volgens de tabel hierboven.
-
+{- |
+Voor de keuzes 1-8, geef een instrument.
+Voor andere keuzes, geef Nothing.
+-}
 chooseInstrument :: Int -> Maybe Instrument
-chooseInstrument = undefined
+chooseInstrument i
+    | i == 1 = Just defaultInstrument
+    | i == 2 = Just defaultSquare
+    | i == 3 = Just defaultTriangle
+    | i == 4 = Just pop
+    | i == 5 = Just twisted
+    | i == 6 = Just bass
+    | i == 7 = Just kick
+    | i == 8 = Just noise
+    | otherwise = Nothing

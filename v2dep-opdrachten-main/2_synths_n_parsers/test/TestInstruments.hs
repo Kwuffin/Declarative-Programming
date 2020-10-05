@@ -30,3 +30,4 @@ test_pad = do
   describe "Instruments.pad" $ do
     it "pads a given range of notes with a quarter pause, both left and right" $ do
       pad [Note C Four Quarter] `shouldBe` [Pause Quarter, Note C Four Quarter, Pause Quarter]
+      pad [Note C Four Quarter, Note C Four Quarter] `shouldBe` [Pause Quarter, Note C Four Quarter, Note C Four Quarter, Pause Quarter]
