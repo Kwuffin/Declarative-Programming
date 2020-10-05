@@ -25,9 +25,11 @@ pitchStandard = 440.0
 
 -- TODO Maak een functie silence die een gegeven aantal seconden aan stilte genereert. Hiervoor kun je een lijst met het juiste aantal (`sampleRate * seconden`) keer `0.0` teruggeven, verpakt tot het `Sound`-datatype.
 silence :: Seconds -> Sound
-makeInt :: Float -> Int
-makeInt i = round i
-silence s = floatSound (replicate (makeInt s) 0.0)
+{- |
+"sampleRate * s" geeft een Float, deze moeten we afronden naar een Integer voor 'replicate'.
+Vervolgens 'verpakken' we de hele lijst als een Sound.
+-}
+silence s = floatSound (replicate (round (sampleRate * s)) 0.0)
 
 sine :: Instrument
 sine = instrument $ \hz duration -> map (sin . (* (hz * pi * 2 / sampleRate))) [0.0..sampleRate * duration]
@@ -80,7 +82,7 @@ defaultInstrument = modifyInstrument sine (attack <> release)
 
 -- TODO Maak een `Instrument` `defaultSquare` gebaseerd op de `squareWave`, gecombineerd met een `attack` en `release` `Modifier`.
 defaultSquare :: Instrument
-{-
+{- |
 Geeft de squareWave en attack door aan modifyInstrument die ik in Types.hs hebben gedefinieerd.
 De output daarvan wordt als instrument gebruikt om nogmaals modifyInstrument op te roepen, maar deze keer met release als modifier.
 -}
@@ -88,7 +90,7 @@ defaultSquare = modifyInstrument (modifyInstrument squareWave attack) release
 
 -- TODO Maak een `Instrument` `defaultTrangle` gebaseerd op de `triangleWave`, gecombineerd met een `attack` en `release` `Modifier`.
 defaultTriangle :: Instrument
-{-
+{- |
 Geeft de triangleWave en attack door aan modifyInstrument.
 De output daarvan wordt als instrument gebruikt om nogmaals modifyInstrument op te roepen, maar deze keer met release als modifier.
 -}
@@ -102,6 +104,9 @@ twisted = modifyInstrument sine (attack <> distort)
 
 -- TODO Maak een functie `pad` die een lijst noten "pad" met vooraf en achteraf quarter-note pauze. Deze wordt gebruikt in de `generateWave` functie om de WAV-export beter te laten klinken.
 pad :: [Note] -> [Note]
+{- |
+Zet een Quarter van het type Pause aan het begin en einde van de gegeven [Note]
+-}
 pad n = Pause (Quarter) : n ++ [Pause (Quarter)]
 
 generateWave :: Beats -> Instrument -> [Note] -> Sound
