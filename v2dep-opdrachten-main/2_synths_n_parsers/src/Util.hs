@@ -22,7 +22,7 @@ zipWithR _ []     bs     = bs
 zipWithR f (a:as) (b:bs) = f a b : zipWithR f as bs
 
 -- TODO Maak een `zipWithL` die als mirror-versie van `zipWithR` fungeert door de lengte gelijk te houden aan die van de eerste input in plaats van de tweede.
-{-
+{- |
 Pattern match op de eerste lijst
 Als de eerste lijst leeg is, geef een lege lijst terug aan de functie.
 Als de tweede lijst leeg is, geef de rest van de eerste lijst terug
@@ -37,14 +37,14 @@ comb :: (b -> b -> b) -> (a -> b) -> (a -> b) -> a -> b
 comb = liftA2
 
 -- TODO Maak een functie `fst3` die het eerste element van een 3-tuple teruggeeft.
-{-
+{- |
 pakt het eerste element uit de tuple met '(a, _, _)', geef daarna 'a' terug.
 -}
 fst3 :: (a, b, c) -> a
 fst3 (a, _, _) = a
 
 -- TODO Maak een functie `uncurry3` die een functie met drie argumenten transformeert naar een functie die een 3-tuple als argument neemt.
-{-
+{- |
 Neemt een functie en tuple als input.
 Pakt de elementen uit de tuple met (a, b, c).
 Voert daarna de functie uit met a, b en c als parameters.

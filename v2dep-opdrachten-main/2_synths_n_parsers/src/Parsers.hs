@@ -11,7 +11,7 @@
     Deze module bevat parsers en functies om deze te combineren. We gebruiken simpele parsers om meer complexe parsers op te bouwen.
 -}
 
-module Parsers (Parser, parse, pCharSet, pComplementCharSet, pString, pOptional, pRepeat, pNumber, pOctave, pHeader, parse) where
+module Parsers (Parser, parse, pCharSet, pComplementCharSet, pString, pOptional, pRepeat, pNumber, pOctave, pHeader) where
 
 import Types (Octave, Beats, Duration(..), Note(..), Tone(..))
  
@@ -67,6 +67,9 @@ pEmpty = return ()
 
 -- TODO Combineer `pRepeatSepBy` en `pEmpty` tot een `Parser` `pRepeat` die een enkele `Parser` herhaalt.
 pRepeat :: Parser a -> Parser [a]
+{- |
+Herhaalt p.
+-}
 pRepeat p = pRepeatSepBy pEmpty p
 
 numbers :: CharSet
@@ -74,6 +77,10 @@ numbers = "0123456789"
 
 -- TODO Combineer `pRepeat` en `pCharSet` tot een `Parser` die een getal als `String` leest, en roep hier `read` op aan om een `Int` terug te geven.
 pNumber :: Parser Int
+{- |
+Parse over numbers als string.
+Als ze geparset zijn, voer read uit met fmap en de uitput uit de parse.
+-}
 pNumber = fmap (read) (pRepeat $ pCharSet numbers)
 
 pTone :: Parser Tone
@@ -129,6 +136,9 @@ pComma = () <$ do _ <- pCharSet ","
 
 -- TODO Pas deze `Parser` aan zodat de de titel uit de RTTL string wordt gehaald en in de plaats van PLACEHOLDER wordt teruggegeven.
 pHeader :: Parser (String, Duration, Octave, Beats)
+{- |
+Herhaal pComplementCharSet totdat je ":" tegenkomt, geef dan alles voor de ":" terug en noem dat 'title'.
+-}
 pHeader = do title <- pRepeat (pComplementCharSet ":")
              _ <- pCharSet ":"
              _ <- pOptional (pCharSet " ")
@@ -154,4 +164,7 @@ pRTTL = do (t, d, o, b) <- pHeader
 
 -- TODO Schrijf een functie `parse` die `pRTTL` aanroept. Bedenk hierbij dat een `Parser` eigenlijk niet meer is dan een `StateT` met een `Maybe` erin. 
 parse :: String -> Maybe (String, [Note], Beats)
+{- |
+Geef de meegegeven string mee aan pRTTL.
+-}
 parse str = evalStateT pRTTL str
